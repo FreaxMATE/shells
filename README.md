@@ -1,71 +1,119 @@
-# Shells - Nix Flake Environment SwitcherConfigure the extension via VS Code settings:
+# 🐚 Shells - Nix Flake Environment Switcher
 
-- `shells.autoActivate`: Automatically activate Nix flake environment when opening a workspace (default: `false`)
-- `shells.flakePath`: Path to the flake.nix file (relative to workspace root). Leave empty to auto-detect.VS Code extension that allows you to switch your development environment to a Nix flake-based environment by detecting and activating flake.nix files in your workspace.
+<div align="center">
 
-## Features
+**Seamlessly switch your VS Code development environment to any Nix flake** 🚀
 
-- **Auto-detection**: Automatically detects `flake.nix` files in your workspace
-- **Status Bar Integration**: Shows the current flake status in the status bar
-- **Quick Selection**: Easily select from multiple flakes if your workspace contains several
-- **System-Wide Integration**: Activates the flake environment for the entire VS Code workspace
-  - All integrated terminals automatically use the flake environment
-  - Build tasks and commands use tools from the flake
-  - Debuggers and language servers use the flake's interpreter/compiler
-- **Auto-activation**: Optional automatic activation when opening a workspace
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visual-studio-code)](https://code.visualstudio.com/)
+[![Nix](https://img.shields.io/badge/Nix-Flakes-5277C3?logo=nixos)](https://nixos.org/)
 
-## Requirements
+</div>
 
-- [Nix](https://nixos.org/) must be installed on your system
-- Nix flakes must be enabled in your Nix configuration
+---
 
-## Usage
+## ✨ What is Shells?
 
-### Commands
+**Shells** is a VS Code extension that brings the power of Nix flakes directly into your editor! It detects `flake.nix` files in your workspace and activates them with a single click, making your entire VS Code instance behave as if it's running inside `nix develop`.
 
-The extension provides the following commands (accessible via Command Palette `Ctrl+Shift+P` / `Cmd+Shift+P`):
+No more switching between terminals or remembering to activate environments manually—just open your project and go! 🎯
 
-- **Shells: Enter Nix Flake Environment**: Activates the detected or selected flake in the entire workspace
-- **Shells: Exit Nix Flake Environment**: Deactivates the flake environment
-- **Shells: Select Nix Flake**: Choose which flake.nix to use if multiple are present
+## 🎁 Features
 
-### Status Bar
+✅ **Smart Auto-Detection** - Automatically finds `flake.nix` files in your workspace  
+✅ **Status Bar Integration** - Shows current flake status at a glance  
+✅ **Multi-Flake Support** - Easily switch between multiple flakes in one workspace  
+✅ **Full Workspace Integration** - Everything uses your flake environment:
+  - 🖥️ All integrated terminals
+  - 🔨 Build tasks and commands
+  - 🐛 Debuggers
+  - 🔍 Language servers
+  - 🎨 Formatters and linters
 
-The extension adds a status bar item on the left side:
-- `$(package) Nix: <flake-name>` - Flake detected but not active (click to select/activate)
-- `$(check) Nix: <flake-name>` - Flake environment is active
-- `$(package) No Flake` - No flake.nix found in workspace
+✅ **Optional Auto-Activation** - Jump straight into your environment on workspace open  
+✅ **Zero Configuration** - Works out of the box with sensible defaults
 
-Click the status bar item to select a different flake.
+## 📋 Requirements
 
-### Configuration
+Before using Shells, make sure you have:
 
-Configure the extension via VS Code settings:
+- 🔹 [Nix](https://nixos.org/) installed on your system
+- 🔹 Nix flakes enabled in your configuration
 
-- `shells.autoActivate`: Automatically activate the Nix flake environment when opening a workspace (default: `false`)
-- `shells.flakePath`: Path to the flake.nix file relative to workspace root. Leave empty to auto-detect.
+<details>
+<summary>🔧 How to enable Nix flakes</summary>
 
-## How It Works
+Add to your `~/.config/nix/nix.conf` or `/etc/nix/nix.conf`:
+```conf
+experimental-features = nix-command flakes
+```
+</details>
 
-1. When you open a workspace, the extension searches for `flake.nix` files
-2. If found, it displays the flake status in the status bar
-3. Click the status bar or run the "Enter Nix Flake Environment" command to activate
-4. The extension:
-   - Extracts all environment variables from `nix develop`
-   - Configures VS Code's integrated terminal to use these variables
-   - Updates the workspace settings so all tools (compilers, interpreters, formatters) use the flake environment
-5. All new terminals and tasks automatically use the flake environment
-6. Build buttons, debuggers, and language servers now use tools from your flake
+## 🚀 Usage
 
-**Result**: Your entire VS Code instance behaves as if it's running inside `nix develop`!
+### 📝 Commands
 
-## Example
+Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-If your workspace has a `flake.nix` like this:
+| Command | Description |
+|---------|-------------|
+| 🟢 **Shells: Enter Nix Flake Environment** | Activates the detected or selected flake |
+| 🔴 **Shells: Exit Nix Flake Environment** | Deactivates the flake environment |
+| 🔄 **Shells: Select Nix Flake** | Choose which flake to use (if multiple exist) |
+
+### 📊 Status Bar
+
+The extension adds a status bar item on the bottom left:
+
+| Icon | Status | Action |
+|------|--------|--------|
+| 📦 **Nix: `<flake-name>`** | Flake detected but not active | Click to activate |
+| ✅ **Nix: `<flake-name>`** | Flake environment is active | Click to change flakes |
+| 📦 **No Flake** | No flake.nix found | — |
+
+### ⚙️ Configuration
+
+Customize the extension via VS Code settings:
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `shells.autoActivate` | boolean | `false` | Automatically activate flake environment on workspace open |
+| `shells.flakePath` | string | `""` | Path to flake.nix (relative to workspace root). Empty = auto-detect |
+
+## 🔍 How It Works
+
+```mermaid
+graph LR
+    A[📂 Open Workspace] --> B{🔎 flake.nix found?}
+    B -->|Yes| C[📊 Show in Status Bar]
+    B -->|No| D[💤 Idle]
+    C --> E[👆 Click to Activate]
+    E --> F[⚡ Run nix develop]
+    F --> G[🌍 Extract Environment]
+    G --> H[⚙️ Configure VS Code]
+    H --> I[🎉 Ready to Code!]
+```
+
+**Step-by-step:**
+
+1. 🔍 Extension searches for `flake.nix` files when you open a workspace
+2. 📊 Displays flake status in the status bar
+3. 👆 Click the status bar or run "Enter Nix Flake Environment" command
+4. ⚡ The extension runs `nix develop` and:
+   - 🌍 Extracts all environment variables
+   - 🖥️ Configures integrated terminal environment
+   - ⚙️ Updates workspace settings for tools and language servers
+5. 🎉 All new terminals, tasks, debuggers, and LSPs use your flake environment!
+
+**Result**: Your entire VS Code behaves as if it's running inside `nix develop`!
+
+## 📚 Example
+
+Here's a simple `flake.nix` that the extension can detect:
 
 ```nix
 {
-  description = "My development environment";
+  description = "🚀 My awesome development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -81,101 +129,123 @@ If your workspace has a `flake.nix` like this:
           nodejs_20
           python3
           git
+          # Add more packages here!
         ];
+        
+        shellHook = ''
+          echo "🎉 Welcome to your dev environment!"
+        '';
       };
     };
 }
 ```
 
-The extension will detect it and allow you to enter an environment with Node.js 20, Python 3, and Git available.
+With this flake, the extension automatically gives you access to:
+- ✅ Node.js 20
+- ✅ Python 3
+- ✅ Git
+- ✅ Any other packages you add!
 
-## Development
+## 🛠️ Development
 
-This extension is built with:
-- TypeScript
-- VS Code Extension API
-- esbuild for bundling
+Want to contribute or customize the extension? Here's how to get started:
 
-To develop:
+### Prerequisites
+- 🦊 Nix with flakes enabled
+- 📦 VS Code
+
+### Setup
 
 ```bash
-# Enter the development environment (using its own flake!)
+# 1️⃣ Clone the repository
+git clone https://github.com/FreaxMATE/shells.git
+cd shells
+
+# 2️⃣ Enter the development environment (using its own flake! 🎭)
 nix develop
 
-# Install dependencies
+# 3️⃣ Install dependencies
 npm install
 
-# Compile
+# 4️⃣ Compile TypeScript
 npm run compile
 
-# Watch mode
+# 5️⃣ Watch mode (auto-recompile on changes)
 npm run watch
-
-# Run in Extension Development Host
-Press F5 in VS Code
 ```
 
-## Packaging and Installation
+### Run & Debug
 
-To package and install the extension locally:
+Press **`F5`** in VS Code to launch the Extension Development Host and test your changes! 🚀
 
-### 1. Package the Extension
+## 📦 Installation
+
+### Method 1: Package Locally
 
 ```bash
-# Enter the development environment
+# 1️⃣ Enter dev environment
 nix develop
 
-# Package the extension (creates a .vsix file)
-# On NixOS, use npx instead of global install:
+# 2️⃣ Package the extension
 npx @vscode/vsce package
-```
 
-This will create a file named `shells-0.0.1.vsix` in the current directory.
-
-**Note for NixOS users**: Global npm installs (`npm install -g`) don't work well on NixOS. Use `npx` to run vsce directly, which downloads and runs the tool without global installation.
-
-### 2. Install the Extension
-
-You have several options to install the packaged extension:
-
-#### Option A: Via Command Line
-```bash
+# 3️⃣ Install the .vsix file
 code --install-extension shells-0.0.1.vsix
 ```
 
-#### Option B: Via VS Code UI
+> **💡 NixOS Tip**: Use `npx` instead of global npm installs for better compatibility!
+
+### Method 2: Install from VSIX (GUI)
+
 1. Open VS Code
-2. Go to Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
-3. Click the `...` menu at the top of the Extensions view
-4. Select "Install from VSIX..."
-5. Navigate to and select the `shells-0.0.1.vsix` file
+2. Navigate to Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`)
+3. Click the **`...`** menu at the top
+4. Select **"Install from VSIX..."**
+5. Choose the `shells-0.0.1.vsix` file
 
-### 3. Verify Installation
+### ✅ Verify Installation
 
-After installation:
-1. Open a workspace that contains a `flake.nix` file
-2. Look for the status bar item on the bottom left showing `$(package) Nix: <flake-name>`
-3. Use `Ctrl+Shift+P` / `Cmd+Shift+P` and search for "Nix Flake" to see available commands
+1. Open a workspace with a `flake.nix` file
+2. Look for the status bar item: 📦 **Nix: `<flake-name>`**
+3. Open Command Palette (`Ctrl+Shift+P`) and search for "Shells" commands
 
-### Publishing to VS Code Marketplace (Optional)
+## 🌐 Publishing (Optional)
 
-To publish the extension to the VS Code Marketplace:
+Want to share with the world? Publish to the VS Code Marketplace:
 
-1. Create a publisher account at https://marketplace.visualstudio.com/
-2. Get a Personal Access Token from Azure DevOps
-3. Login with vsce:
-   ```bash
-   vsce login <publisher-name>
-   ```
-4. Publish the extension:
-   ```bash
-   vsce publish
-   ```
+```bash
+# 1️⃣ Create publisher account
+# Visit: https://marketplace.visualstudio.com/
 
-## License
+# 2️⃣ Get Personal Access Token from Azure DevOps
 
-GPL-3.0-or-later
+# 3️⃣ Login with vsce
+npx @vscode/vsce login <publisher-name>
 
-## Contributing
+# 4️⃣ Publish!
+npx @vscode/vsce publish
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## 🤝 Contributing
+
+Contributions are **welcome and appreciated**! 💙
+
+- 🐛 Found a bug? [Open an issue](https://github.com/FreaxMATE/shells/issues)
+- 💡 Have an idea? [Start a discussion](https://github.com/FreaxMATE/shells/discussions)
+- 🔧 Want to contribute code? [Submit a pull request](https://github.com/FreaxMATE/shells/pulls)
+
+## 📄 License
+
+This project is licensed under the **GPL-3.0-or-later** License.
+
+See [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**Made with ❤️ and Nix**
+
+⭐ Star this repo if you find it useful!
+
+</div>
