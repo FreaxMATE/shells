@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 128 128"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Nix Shell Selector — Hex (Inkscape compatible)</title>
+  <desc id="desc">Three concentric hexagonal shells with a selector dot, cream background and navy outline — styles inlined for Inkscape.</desc>
+
+  <!-- background rounded square -->
+  <rect x="4" y="4" width="120" height="120" rx="18" ry="18"
+        fill="#F6EFE2" />
+  <rect x="4" y="4" width="120" height="120" rx="18" ry="18"
+        fill="none" stroke="#1F3B46" stroke-width="6" stroke-linejoin="round" />
+
+  <!-- subtle grid on right -->
+  <g transform="translate(78,36)">
+    <line x1="0" y1="0" x2="0" y2="56"
+          fill="none" stroke="#1F3B46" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round" />
+    <line x1="20" y1="0" x2="20" y2="56"
+          fill="none" stroke="#1F3B46" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round" />
+    <line x1="40" y1="0" x2="40" y2="56"
+          fill="none" stroke="#1F3B46" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round" />
+    <line x1="0" y1="0" x2="40" y2="0"
+          fill="none" stroke="#1F3B46" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round" />
+    <line x1="0" y1="28" x2="40" y2="28"
+          fill="none" stroke="#1F3B46" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round" />
+    <line x1="0" y1="56" x2="40" y2="56"
+          fill="none" stroke="#1F3B46" stroke-opacity="0.12" stroke-width="3" stroke-linecap="round" />
+  </g>
+
+  <!-- concentric hexagons centered left-of-center -->
+  <g transform="translate(46,64)">
+    <!-- Outer hexagon (big) -->
+    <polygon points="
+      0,-34
+      29,-17
+      29,17
+      0,34
+      -29,17
+      -29,-17" 
+      fill="#6EA5A0" stroke="#1F3B46" stroke-width="4" stroke-linejoin="round" />
+
+    <!-- Middle hexagon -->
+    <polygon points="
+      0,-23
+      20.5,-11.5
+      20.5,11.5
+      0,23
+      -20.5,11.5
+      -20.5,-11.5" 
+      fill="#DCCCAC" stroke="#1F3B46" stroke-width="4" stroke-linejoin="round" />
+
+    <!-- Inner hexagon/core -->
+    <polygon points="
+      0,-12
+      10.7,-6
+      10.7,6
+      0,12
+      -10.7,6
+      -10.7,-6" 
+      fill="#E07A3A" stroke="#1F3B46" stroke-width="4" stroke-linejoin="round" />
+  </g>
+
+  <!-- selector: short horizontal connector from right edge of outer hex to dot -->
+  <g>
+    <line x1="58" y1="64" x2="86" y2="64"
+          fill="none" stroke="#1F3B46" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="94" cy="64" r="6" fill="#6EA5A0" stroke="#1F3B46" stroke-width="4" />
+  </g>
+</svg>

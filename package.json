@@ -1,0 +1,80 @@
+{
+  "name": "shells",
+  "displayName": "Shells - Nix Flake Environment Switcher",
+  "description": "Switch development environment to Nix flake-based environment",
+  "version": "0.0.1",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/flake.nix"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "shells.enterFlake",
+        "title": "Shells: Enter Nix Flake Environment"
+      },
+      {
+        "command": "shells.exitFlake",
+        "title": "Shells: Exit Nix Flake Environment"
+      },
+      {
+        "command": "shells.selectFlake",
+        "title": "Shells: Select Nix Flake"
+      }
+    ],
+    "configuration": {
+      "title": "Shells - Nix Flake Environment",
+      "properties": {
+        "shells.autoActivate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically activate Nix flake environment when opening a workspace with flake.nix"
+        },
+        "shells.flakePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the flake.nix file (relative to workspace root). Leave empty to auto-detect."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "compile": "npm run esbuild",
+    "watch": "npm run esbuild-base -- --sourcemap --watch",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.x",
+    "@typescript-eslint/parser": "^6.x",
+    "esbuild": "^0.19.0",
+    "eslint": "^8.x",
+    "typescript": "^5.3.0"
+  },
+  "keywords": [
+    "nix",
+    "flake",
+    "nixos",
+    "development-environment"
+  ],
+  "author": "Konstantin Unruh",
+  "publisher": "your-publisher-name",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FreaxMATE/shells"
+  }
+}
