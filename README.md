@@ -1,6 +1,8 @@
-# 🐚 Shells - Nix Flake Environment Switcher
-
 <div align="center">
+
+<img src="icon.png" alt="Shells Icon" width="128" height="128">
+
+# 🐚 Shells - Nix Flake Environment Switcher
 
 **Seamlessly switch your VS Code development environment to any Nix flake** 🚀
 
@@ -208,23 +210,6 @@ code --install-extension shells-0.0.1.vsix
 1. Open a workspace with a `flake.nix` file
 2. Look for the status bar item: 📦 **Nix: `<flake-name>`**
 3. Open Command Palette (`Ctrl+Shift+P`) and search for "Shells" commands
-
-## 🌐 Publishing (Optional)
-
-Want to share with the world? Publish to the VS Code Marketplace:
-
-```bash
-# 1️⃣ Create publisher account
-# Visit: https://marketplace.visualstudio.com/
-
-# 2️⃣ Get Personal Access Token from Azure DevOps
-
-# 3️⃣ Login with vsce
-npx @vscode/vsce login <publisher-name>
-
-# 4️⃣ Publish!
-npx @vscode/vsce publish
-```
 
 ## 🤝 Contributing
 
