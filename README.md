@@ -62,16 +62,35 @@ Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 | 🟢 **Shells: Enter Nix Flake Environment** | Activates the detected or selected flake |
 | 🔴 **Shells: Exit Nix Flake Environment** | Deactivates the flake environment |
 | 🔄 **Shells: Select Nix Flake** | Choose which flake to use (if multiple exist) |
+| 📊 **Shells: Show Output** | Open the output channel to view detailed logs |
 
 ### 📊 Status Bar
 
-The extension adds a status bar item on the bottom left:
+The extension adds a status bar item on the bottom left with **visual indicators**:
 
-| Icon | Status | Action |
-|------|--------|--------|
-| 📦 **Nix: `<flake-name>`** | Flake detected but not active | Click to activate |
-| ✅ **Nix: `<flake-name>`** | Flake environment is active | Click to change flakes |
-| 📦 **No Flake** | No flake.nix found | — |
+| Icon | Status | Visual Style | Action |
+|------|--------|--------------|--------|
+| ✅ **Nix: `<flake-name>`** | Flake environment **ACTIVE** | � **Highlighted with green background** | Click to change flakes |
+| �📦 **Nix: `<flake-name>`** | Flake detected but not active | Normal styling | Click to activate |
+| 📦 **No Flake** | No flake.nix found | Normal styling | — |
+
+**Tip:** When the environment is active, the status bar item has a prominent colored background so you can easily see at a glance whether you're in a flake shell!
+
+### 🐛 Debugging & Output
+
+The extension includes a comprehensive output channel for debugging:
+
+- 📝 **View detailed logs** of all nix develop operations
+- 🔍 **See full command output** including stdout and stderr
+- � **Track environment variable extraction** with counts
+- ⏱️ **Timestamped operations** for troubleshooting
+- ❌ **Detailed error messages** when something goes wrong
+
+**Access the output:**
+- Automatically shows when activating a flake
+- Click "Show Output" button in notifications
+- Run command: `Shells: Show Output`
+- Or open manually: View → Output → Select "Nix Flake Environment"
 
 ### ⚙️ Configuration
 
@@ -219,7 +238,56 @@ Contributions are **welcome and appreciated**! 💙
 - 💡 Have an idea? [Start a discussion](https://github.com/FreaxMATE/shells/discussions)
 - 🔧 Want to contribute code? [Submit a pull request](https://github.com/FreaxMATE/shells/pulls)
 
-## 📄 License
+## � Python & Jupyter Notebooks
+
+The extension fully supports Python development and Jupyter notebooks! When you activate a flake environment, the extension:
+
+1. 🔍 **Detects the Python interpreter** from your flake's PATH
+2. ⚙️ **Configures VS Code's Python extension** to use the flake's Python
+3. 📓 **Enables Jupyter notebooks** with all packages from your flake
+
+### Example Jupyter-ready flake:
+
+```nix
+{
+  description = "Python Data Science Environment";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+  };
+
+  outputs = { self, nixpkgs, ... }:
+  let
+    system = "x86_64-linux";
+    pkgs = import nixpkgs { inherit system; };
+  in {
+    devShells."${system}".default = pkgs.mkShell {
+      packages = with pkgs; [
+        python312Packages.python
+        python312Packages.numpy
+        python312Packages.matplotlib
+        python312Packages.pandas
+        python312Packages.scipy
+        python312Packages.notebook
+        python312Packages.jupyter
+        python312Packages.pip
+      ];
+    };
+  };
+}
+```
+
+### ⚠️ Important: Reload Required
+
+After activating a flake environment for the first time, **you must reload VS Code** for the Python and Jupyter extensions to pick up the new interpreter. The extension will prompt you to do this automatically.
+
+Click **"Reload Window"** when prompted, or manually run: `Developer: Reload Window` from the Command Palette.
+
+### 💡 Why Reload?
+
+VS Code's Python and Jupyter extensions cache the interpreter path and environment. A reload ensures they discover and use the Python from your Nix flake environment.
+
+## �📄 License
 
 This project is licensed under the **GPL-3.0-or-later** License.
 

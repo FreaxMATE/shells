@@ -8,6 +8,22 @@ let currentFlakePath: string | undefined;
 let statusBarItem: vscode.StatusBarItem;
 let flakeEnvironment: NodeJS.ProcessEnv | undefined;
 let isEnvironmentActive = false;
+let outputChannel: vscode.OutputChannel;
+
+/**
+ * Checks if the environment is currently active by looking at workspace configuration
+ */
+function checkEnvironmentActive(): boolean {
+	const terminalConfig = vscode.workspace.getConfiguration('terminal.integrated');
+	const linuxEnv = terminalConfig.get<NodeJS.ProcessEnv>('env.linux');
+	const osxEnv = terminalConfig.get<NodeJS.ProcessEnv>('env.osx');
+	
+	// If either environment is set, the flake environment is active
+	const hasLinuxEnv = !!(linuxEnv && Object.keys(linuxEnv).length > 0);
+	const hasOsxEnv = !!(osxEnv && Object.keys(osxEnv).length > 0);
+	
+	return hasLinuxEnv || hasOsxEnv;
+}
 
 /**
  * Validates that a flake path is safe and within the workspace
@@ -48,6 +64,10 @@ async function isNixAvailable(): Promise<boolean> {
 function getFlakeEnvironment(flakeDir: string): Promise<NodeJS.ProcessEnv> {
 	return new Promise((resolve, reject) => {
 		const env: NodeJS.ProcessEnv = {};
+		
+		outputChannel.appendLine(`[${new Date().toISOString()}] Running: nix develop ${flakeDir} --command env`);
+		outputChannel.appendLine('='.repeat(80));
+		
 		const proc = spawn('nix', ['develop', flakeDir, '--command', 'env'], {
 			cwd: flakeDir,
 			timeout: 60000, // 60 second timeout
@@ -57,29 +77,48 @@ function getFlakeEnvironment(flakeDir: string): Promise<NodeJS.ProcessEnv> {
 		let stderr = '';
 
 		proc.stdout?.on('data', (data) => {
-			stdout += data.toString();
+			const text = data.toString();
+			stdout += text;
+			outputChannel.append(text);
 		});
 
 		proc.stderr?.on('data', (data) => {
-			stderr += data.toString();
+			const text = data.toString();
+			stderr += text;
+			outputChannel.append(`[STDERR] ${text}`);
 		});
 
 		proc.on('close', (code) => {
+			outputChannel.appendLine('='.repeat(80));
+			outputChannel.appendLine(`[${new Date().toISOString()}] Process exited with code: ${code}`);
+			
 			if (code === 0) {
 				const lines = stdout.split('\n');
+				let envVarCount = 0;
 				for (const line of lines) {
 					const match = line.match(/^([^=]+)=(.*)$/);
 					if (match && match[1]) {
 						env[match[1]] = match[2];
+						envVarCount++;
 					}
 				}
+				outputChannel.appendLine(`Successfully extracted ${envVarCount} environment variables`);
+				outputChannel.appendLine('');
 				resolve(env);
 			} else {
-				reject(new Error(`nix develop failed with code ${code}`));
+				outputChannel.appendLine(`ERROR: nix develop failed with code ${code}`);
+				if (stderr) {
+					outputChannel.appendLine('STDERR output:');
+					outputChannel.appendLine(stderr);
+				}
+				outputChannel.appendLine('');
+				reject(new Error(`nix develop failed with code ${code}: ${stderr}`));
 			}
 		});
 
 		proc.on('error', (error) => {
+			outputChannel.appendLine(`[${new Date().toISOString()}] ERROR: ${error.message}`);
+			outputChannel.appendLine('');
 			reject(error);
 		});
 	});
@@ -88,6 +127,10 @@ function getFlakeEnvironment(flakeDir: string): Promise<NodeJS.ProcessEnv> {
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Shells - Nix Flake Environment Switcher is now active');
+
+	// Create output channel for debugging
+	outputChannel = vscode.window.createOutputChannel('Nix Flake Environment');
+	context.subscriptions.push(outputChannel);
 
 	// Create status bar item
 	statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -110,6 +153,12 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('shells.selectFlake', async () => {
 			await selectFlake();
+		})
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('shells.showOutput', () => {
+			outputChannel.show();
 		})
 	);
 
@@ -157,11 +206,32 @@ async function autoDetectFlake() {
 		currentFlakePath = flakeFiles[0].fsPath;
 	}
 
-	updateStatusBar(false);
+	// Check if environment was previously active (persists across reloads)
+	const wasActive = checkEnvironmentActive();
+	if (wasActive) {
+		outputChannel.appendLine(`\n${'*'.repeat(80)}`);
+		outputChannel.appendLine(`Restoring Nix Flake Environment State`);
+		outputChannel.appendLine(`Flake: ${currentFlakePath}`);
+		outputChannel.appendLine(`Time: ${new Date().toISOString()}`);
+		outputChannel.appendLine(`${'*'.repeat(80)}\n`);
+		
+		isEnvironmentActive = true;
+		
+		// Restore the environment variables from workspace config
+		const terminalConfig = vscode.workspace.getConfiguration('terminal.integrated');
+		const linuxEnv = terminalConfig.get<NodeJS.ProcessEnv>('env.linux');
+		const osxEnv = terminalConfig.get<NodeJS.ProcessEnv>('env.osx');
+		flakeEnvironment = linuxEnv || osxEnv;
+		
+		outputChannel.appendLine('✅ Nix flake environment state restored from workspace configuration');
+		outputChannel.appendLine('='.repeat(80) + '\n');
+	}
+	
+	updateStatusBar(wasActive);
 
-	// Auto-activate if configured
+	// Auto-activate if configured (and not already active)
 	const autoActivate = config.get<boolean>('autoActivate');
-	if (autoActivate && currentFlakePath) {
+	if (autoActivate && currentFlakePath && !wasActive) {
 		await enterFlakeEnvironment();
 	}
 }
@@ -208,11 +278,18 @@ async function enterFlakeEnvironment() {
 
 	try {
 		vscode.window.showInformationMessage('Entering Nix flake environment...');
+		outputChannel.show(true); // Show output channel but keep focus
+		outputChannel.appendLine(`\n${'*'.repeat(80)}`);
+		outputChannel.appendLine(`Activating Nix Flake Environment`);
+		outputChannel.appendLine(`Flake: ${currentFlakePath}`);
+		outputChannel.appendLine(`Time: ${new Date().toISOString()}`);
+		outputChannel.appendLine(`${'*'.repeat(80)}\n`);
 		
 		// Check if nix is available
 		const nixAvailable = await isNixAvailable();
 		if (!nixAvailable) {
 			vscode.window.showErrorMessage('Nix is not installed or not in PATH');
+			outputChannel.appendLine('ERROR: Nix is not installed or not in PATH\n');
 			return;
 		}
 
@@ -220,31 +297,86 @@ async function enterFlakeEnvironment() {
 		const flakeDir = path.dirname(currentFlakePath);
 
 		// Get the flake environment variables securely
+		outputChannel.appendLine('Extracting environment variables from flake...\n');
 		flakeEnvironment = await getFlakeEnvironment(flakeDir);
 
 		// Update VS Code's integrated terminal environment
-		const config = vscode.workspace.getConfiguration('terminal.integrated');
-		await config.update('env.linux', flakeEnvironment, vscode.ConfigurationTarget.Workspace);
-		await config.update('env.osx', flakeEnvironment, vscode.ConfigurationTarget.Workspace);
+		const terminalConfig = vscode.workspace.getConfiguration('terminal.integrated');
+		await terminalConfig.update('env.linux', flakeEnvironment, vscode.ConfigurationTarget.Workspace);
+		await terminalConfig.update('env.osx', flakeEnvironment, vscode.ConfigurationTarget.Workspace);
+
+		// Critical: Update Python interpreter path for Jupyter to work
+		// Find the python executable in the flake environment
+		const pythonPath = flakeEnvironment['PATH']?.split(':').find(p => 
+			fs.existsSync(path.join(p, 'python')) || 
+			fs.existsSync(path.join(p, 'python3'))
+		);
+		
+		if (pythonPath) {
+			const pythonExe = fs.existsSync(path.join(pythonPath, 'python3')) 
+				? path.join(pythonPath, 'python3')
+				: path.join(pythonPath, 'python');
+			
+			outputChannel.appendLine(`Configuring Python interpreter: ${pythonExe}`);
+			
+			const pythonConfig = vscode.workspace.getConfiguration('python');
+			await pythonConfig.update('defaultInterpreterPath', pythonExe, vscode.ConfigurationTarget.Workspace);
+			
+			// Also set environment variables for the Python extension
+			await pythonConfig.update('envFile', '${workspaceFolder}/.vscode/.env.nix', vscode.ConfigurationTarget.Workspace);
+			
+			// Write environment variables to a file for Python extension
+			const envFilePath = path.join(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', '.vscode', '.env.nix');
+			const envDir = path.dirname(envFilePath);
+			if (!fs.existsSync(envDir)) {
+				fs.mkdirSync(envDir, { recursive: true });
+			}
+			
+			// Write critical environment variables
+			const envContent = Object.entries(flakeEnvironment)
+				.filter(([key]) => key === 'PATH' || key === 'LD_LIBRARY_PATH' || key === 'PYTHONPATH' || 
+				                   key.startsWith('JUPYTER') || key.startsWith('PYTHON'))
+				.map(([key, value]) => `${key}=${value}`)
+				.join('\n');
+			fs.writeFileSync(envFilePath, envContent);
+			outputChannel.appendLine(`Created environment file: ${envFilePath}`);
+		} else {
+			outputChannel.appendLine('No Python interpreter found in flake environment');
+		}
+
+		// Set Jupyter-specific settings
+		outputChannel.appendLine('Configuring Jupyter settings');
+		const jupyterConfig = vscode.workspace.getConfiguration('jupyter');
+		await jupyterConfig.update('notebookFileRoot', '${workspaceFolder}', vscode.ConfigurationTarget.Workspace);
 
 		isEnvironmentActive = true;
 		updateStatusBar(true);
 
+		outputChannel.appendLine('\n✅ Nix flake environment activated successfully!');
+		outputChannel.appendLine('='.repeat(80) + '\n');
+
 		// Show success message with option to open terminal
 		const action = await vscode.window.showInformationMessage(
-			'Nix flake environment activated! All new terminals will use this environment.',
+			'Nix flake environment activated! Reload window to apply to Python/Jupyter.',
+			'Reload Window',
 			'Open Terminal',
-			'Reload Window'
+			'Show Output'
 		);
 
-		if (action === 'Open Terminal') {
-			vscode.commands.executeCommand('workbench.action.terminal.new');
-		} else if (action === 'Reload Window') {
+		if (action === 'Reload Window') {
 			vscode.commands.executeCommand('workbench.action.reloadWindow');
+		} else if (action === 'Open Terminal') {
+			vscode.commands.executeCommand('workbench.action.terminal.new');
+		} else if (action === 'Show Output') {
+			outputChannel.show();
 		}
 
 	} catch (error) {
+		const errorMsg = error instanceof Error ? error.message : String(error);
 		vscode.window.showErrorMessage('Failed to enter flake environment. Check the output for details.');
+		outputChannel.appendLine(`\n❌ ERROR: ${errorMsg}`);
+		outputChannel.appendLine('='.repeat(80) + '\n');
+		outputChannel.show();
 		console.error('Error entering flake environment:', error);
 	}
 }
@@ -266,16 +398,43 @@ async function injectEnvironmentIntoTerminal(terminal: vscode.Terminal) {
 }
 
 async function exitFlakeEnvironment() {
+	outputChannel.appendLine(`\n${'*'.repeat(80)}`);
+	outputChannel.appendLine(`Deactivating Nix Flake Environment`);
+	outputChannel.appendLine(`Time: ${new Date().toISOString()}`);
+	outputChannel.appendLine(`${'*'.repeat(80)}\n`);
+
 	// Clear the environment
 	flakeEnvironment = undefined;
 	isEnvironmentActive = false;
 
 	// Reset terminal environment
-	const config = vscode.workspace.getConfiguration('terminal.integrated');
-	await config.update('env.linux', undefined, vscode.ConfigurationTarget.Workspace);
-	await config.update('env.osx', undefined, vscode.ConfigurationTarget.Workspace);
+	outputChannel.appendLine('Resetting terminal environment...');
+	const terminalConfig = vscode.workspace.getConfiguration('terminal.integrated');
+	await terminalConfig.update('env.linux', undefined, vscode.ConfigurationTarget.Workspace);
+	await terminalConfig.update('env.osx', undefined, vscode.ConfigurationTarget.Workspace);
+
+	// Reset Python configuration
+	outputChannel.appendLine('Resetting Python configuration...');
+	const pythonConfig = vscode.workspace.getConfiguration('python');
+	await pythonConfig.update('defaultInterpreterPath', undefined, vscode.ConfigurationTarget.Workspace);
+	await pythonConfig.update('envFile', undefined, vscode.ConfigurationTarget.Workspace);
+	
+	// Remove the .env.nix file
+	const envFilePath = path.join(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', '.vscode', '.env.nix');
+	if (fs.existsSync(envFilePath)) {
+		fs.unlinkSync(envFilePath);
+		outputChannel.appendLine(`Removed environment file: ${envFilePath}`);
+	}
+
+	// Reset Jupyter configuration
+	outputChannel.appendLine('Resetting Jupyter configuration...');
+	const jupyterConfig = vscode.workspace.getConfiguration('jupyter');
+	await jupyterConfig.update('notebookFileRoot', undefined, vscode.ConfigurationTarget.Workspace);
 
 	updateStatusBar(false);
+
+	outputChannel.appendLine('\n✅ Nix flake environment deactivated successfully!');
+	outputChannel.appendLine('='.repeat(80) + '\n');
 
 	const action = await vscode.window.showInformationMessage(
 		'Nix flake environment deactivated. Reload window to apply changes.',
@@ -291,14 +450,25 @@ function updateStatusBar(isActive: boolean) {
 	if (!currentFlakePath) {
 		statusBarItem.text = '$(package) No Flake';
 		statusBarItem.tooltip = 'No flake.nix found';
+		statusBarItem.backgroundColor = undefined;
+		statusBarItem.color = undefined;
 	} else {
 		const flakeName = path.basename(path.dirname(currentFlakePath));
-		statusBarItem.text = isActive 
-			? `$(check) Nix: ${flakeName}` 
-			: `$(package) Nix: ${flakeName}`;
-		statusBarItem.tooltip = isActive
-			? `Active Nix flake environment: ${currentFlakePath}`
-			: `Detected Nix flake: ${currentFlakePath}\nClick to select or activate`;
+		
+		if (isActive) {
+			// Active state: Green checkmark with emphasis
+			statusBarItem.text = `$(pass-filled) Nix: ${flakeName}`;
+			statusBarItem.tooltip = `✅ Active Nix flake environment\nFlake: ${currentFlakePath}\n\nClick to change flakes or view output`;
+			// Use a subtle background color to make it stand out
+			statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.prominentBackground');
+			statusBarItem.color = new vscode.ThemeColor('statusBarItem.prominentForeground');
+		} else {
+			// Inactive state: Simple package icon
+			statusBarItem.text = `$(package) Nix: ${flakeName}`;
+			statusBarItem.tooltip = `Detected Nix flake: ${currentFlakePath}\n\nClick to activate environment`;
+			statusBarItem.backgroundColor = undefined;
+			statusBarItem.color = undefined;
+		}
 	}
 	statusBarItem.show();
 }

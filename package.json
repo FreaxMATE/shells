@@ -2,7 +2,7 @@
   "name": "shells",
   "displayName": "Shells - Nix Flake Environment Switcher",
   "description": "Switch development environment to Nix flake-based environment",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -27,6 +27,10 @@
       {
         "command": "shells.selectFlake",
         "title": "Shells: Select Nix Flake"
+      },
+      {
+        "command": "shells.showOutput",
+        "title": "Shells: Show Output"
       }
     ],
     "configuration": {

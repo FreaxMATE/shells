@@ -29,6 +29,9 @@ Thumbs.db
 *.swo
 *~
 
+# Nix environment files
+.env.nix
+
 # Nix
 result
 result-*
