@@ -2,7 +2,7 @@
   "name": "shells",
   "displayName": "Shells - Nix Flake Environment Switcher",
   "description": "Switch development environment to Nix flake-based environment",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
@@ -45,6 +45,16 @@
           "type": "string",
           "default": "",
           "description": "Path to the flake.nix file (relative to workspace root). Leave empty to auto-detect."
+        },
+        "shells.impure": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow impure flake evaluation (nix develop --impure)."
+        },
+        "shells.nixCommandExtraFlags": {
+          "type": "array",
+          "default": [],
+          "description": "Additional flags can be added via this option (e.g. ['--impure', '--fallback', '--refresh'])."
         }
       }
     }
